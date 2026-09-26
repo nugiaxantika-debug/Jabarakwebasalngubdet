@@ -2137,7 +2137,7 @@ export default function Dashboard() {
                   <div className="bg-green-500/20 p-2 rounded-lg text-green-400 mt-1"><Download className="w-5 h-5" /></div>
                   <div>
                     <h3 className="font-semibold text-white text-sm">.downloadmenu</h3>
-                    <p className="text-xs text-neutral-400 mt-1">Download Tiktok, TiktokAudio, Youtube MP3/MP4, Auto Voice Note (.autovn), Capcut, FB, IG, Pinterest, dll.</p>
+                    <p className="text-xs text-neutral-400 mt-1">Play Spotify visual bergerak (.playspotify), Download Tiktok, TiktokAudio, Youtube MP3/MP4, Auto Voice Note (.autovn), Capcut, FB, IG, Pinterest, dll.</p>
                   </div>
                 </div>
                 <div className="bg-neutral-950 border border-neutral-800 p-4 rounded-xl flex items-start gap-4">

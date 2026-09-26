@@ -434,6 +434,177 @@ private loadKaryawanData() {
       return null;
   }
 
+  private async generateSpotifyPlayerVideo(
+    trackTitle: string,
+    artistName: string,
+    albumArtBuffer: Buffer | null,
+    audioFilePath: string,
+    totalDurationStr: string = "3:45",
+    totalSeconds: number = 225
+  ): Promise<Buffer> {
+    const fs = await import('fs');
+    const path = await import('path');
+    const os = await import('os');
+    const { execSync } = await import('child_process');
+    const sharp = (await import('sharp')).default;
+    const ffmpegPath = (await import('ffmpeg-static')).default;
+
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'spot-play-'));
+    try {
+      const width = 540;
+      const height = 960;
+      const fps = 8;
+      const videoDuration = 12;
+      const totalFrames = fps * videoDuration;
+
+      let albumB64 = '';
+      if (albumArtBuffer && albumArtBuffer.length > 0) {
+        try {
+          const resized = await sharp(albumArtBuffer)
+            .resize(440, 440, { fit: 'cover' })
+            .jpeg({ quality: 85 })
+            .toBuffer();
+          albumB64 = resized.toString('base64');
+        } catch (e) {
+          console.warn("Failed to resize album art:", e);
+        }
+      }
+
+      const escapeXml = (unsafe: string) => {
+        return (unsafe || '').replace(/[<>&'"]/g, (c) => {
+          switch (c) {
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '&': return '&amp;';
+            case '\'': return '&apos;';
+            case '"': return '&quot;';
+            default: return c;
+          }
+        });
+      };
+
+      const safeTitle = escapeXml(trackTitle.length > 28 ? trackTitle.substring(0, 26) + '...' : trackTitle);
+      const safeArtist = escapeXml(artistName.length > 32 ? artistName.substring(0, 30) + '...' : artistName);
+      const safeDuration = escapeXml(totalDurationStr || "3:30");
+
+      for (let i = 0; i < totalFrames; i++) {
+        const elapsedSec = Math.floor(i / fps);
+        const m = Math.floor(elapsedSec / 60);
+        const s = String(elapsedSec % 60).padStart(2, '0');
+        const elapsedStr = `${m}:${s}`;
+
+        const progressPercent = Math.min(100, Math.max(2, ((elapsedSec + (i % fps) / fps) / Math.max(videoDuration * 2, totalSeconds)) * 100));
+        const barWidth = 440;
+        const filledWidth = Math.max(10, Math.min(barWidth, (progressPercent / 100) * barWidth));
+        const knobX = 50 + filledWidth;
+
+        let eqSvg = '';
+        const numBars = 22;
+        for (let b = 0; b < numBars; b++) {
+          const wave = Math.abs(Math.sin((i * 0.45) + (b * 0.75)));
+          const h = 6 + Math.round(wave * 34);
+          const x = 115 + b * 14;
+          const y = 645 - h / 2;
+          eqSvg += `<rect x="${x}" y="${y}" width="7" height="${h}" rx="3.5" fill="#1DB954" opacity="0.9" />`;
+        }
+
+        const albumElement = albumB64
+          ? `<image href="data:image/jpeg;base64,${albumB64}" x="50" y="105" width="440" height="440" clip-path="url(#albumClip)" preserveAspectRatio="xMidYMid slice" />`
+          : `<rect x="50" y="105" width="440" height="440" rx="16" fill="#1a3b6b" /><text x="270" y="335" fill="#ffffff" font-size="28" font-family="sans-serif" text-anchor="middle">🎵 SPOTIFY</text>`;
+
+        const glowOpacity = (0.2 + 0.12 * Math.sin(i * 0.5)).toFixed(2);
+
+        const svg = `
+        <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#072a72" />
+              <stop offset="55%" stop-color="#041a4a" />
+              <stop offset="100%" stop-color="#020c24" />
+            </linearGradient>
+            <clipPath id="albumClip">
+              <rect x="50" y="105" width="440" height="440" rx="16" />
+            </clipPath>
+          </defs>
+
+          <!-- Background -->
+          <rect width="100%" height="100%" fill="url(#bg)" />
+
+          <!-- Header -->
+          <path d="M 42 55 L 54 67 L 66 55" stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+          <text x="270" y="62" fill="#ffffff" font-size="16" font-family="sans-serif" font-weight="bold" text-anchor="middle">${safeTitle}</text>
+          <circle cx="480" cy="60" r="3" fill="#ffffff" />
+          <circle cx="492" cy="60" r="3" fill="#ffffff" />
+          <circle cx="504" cy="60" r="3" fill="#ffffff" />
+
+          <!-- Physical Pulsing Album Glow -->
+          <rect x="46" y="101" width="448" height="448" rx="20" fill="#1DB954" opacity="${glowOpacity}" />
+          <!-- Album Art with drop shadow -->
+          <rect x="48" y="107" width="444" height="444" rx="18" fill="#000000" opacity="0.4" />
+          ${albumElement}
+
+          <!-- Track Info -->
+          <text x="50" y="595" fill="#ffffff" font-size="24" font-family="sans-serif" font-weight="bold">${safeTitle}</text>
+          <text x="50" y="625" fill="#a0b2c6" font-size="17" font-family="sans-serif">${safeArtist}</text>
+
+          <!-- Like Button (Heart) -->
+          <path d="M 488 602 C 488 592 473 587 463 597 C 453 587 438 592 438 602 C 438 616 463 630 463 630 C 463 630 488 616 488 602 Z" fill="#1DB954" />
+
+          <!-- Animated Equalizer Waves -->
+          <g>${eqSvg}</g>
+
+          <!-- Progress Bar -->
+          <rect x="50" y="675" width="${barWidth}" height="6" rx="3" fill="rgba(255,255,255,0.25)" />
+          <rect x="50" y="675" width="${filledWidth}" height="6" rx="3" fill="#ffffff" />
+          <circle cx="${knobX}" cy="678" r="7" fill="#ffffff" />
+
+          <!-- Duration Labels -->
+          <text x="50" y="710" fill="#a0b2c6" font-size="14" font-family="monospace">${elapsedStr}</text>
+          <text x="455" y="710" fill="#a0b2c6" font-size="14" font-family="monospace">${safeDuration}</text>
+
+          <!-- Media Controls -->
+          <!-- Shuffle -->
+          <path d="M 52 780 L 80 804 M 52 804 L 80 780" stroke="#a0b2c6" stroke-width="2.5" stroke-linecap="round" />
+          <!-- Previous Track -->
+          <path d="M 155 776 L 155 812 M 155 794 L 180 776 L 180 812 Z" fill="#ffffff" />
+          <!-- Big Pause Button (White Circle + Black Bars) -->
+          <circle cx="270" cy="794" r="38" fill="#ffffff" />
+          <rect x="259" y="779" width="7" height="30" rx="3.5" fill="#000000" />
+          <rect x="274" y="779" width="7" height="30" rx="3.5" fill="#000000" />
+          <!-- Next Track -->
+          <path d="M 385 776 L 385 812 M 385 794 L 360 776 L 360 812 Z" fill="#ffffff" />
+          <!-- Repeat -->
+          <circle cx="475" cy="794" r="14" fill="none" stroke="#a0b2c6" stroke-width="2.2" stroke-dasharray="64 20" />
+
+          <!-- Bottom Bar: Spotify Branding & Share -->
+          <path d="M 52 870 A 10 10 0 0 1 72 870 A 10 10 0 0 1 92 870" fill="none" stroke="#a0b2c6" stroke-width="2.5" stroke-linecap="round" />
+          <text x="270" y="876" fill="#1DB954" font-size="14" font-family="sans-serif" font-weight="bold" letter-spacing="2" text-anchor="middle">SPOTIFY LIVE PLAYER</text>
+          <!-- Share Icon -->
+          <circle cx="470" cy="865" r="3.5" fill="#a0b2c6" />
+          <circle cx="485" cy="858" r="3.5" fill="#a0b2c6" />
+          <circle cx="485" cy="872" r="3.5" fill="#a0b2c6" />
+          <line x1="472" y1="864" x2="483" y2="859" stroke="#a0b2c6" stroke-width="2" />
+          <line x1="472" y1="866" x2="483" y2="871" stroke="#a0b2c6" stroke-width="2" />
+        </svg>
+        `;
+
+        const frameBuf = await sharp(Buffer.from(svg)).jpeg({ quality: 82 }).toBuffer();
+        const frameNum = String(i + 1).padStart(4, '0');
+        fs.writeFileSync(path.join(tmpDir, `frame_${frameNum}.jpg`), frameBuf);
+      }
+
+      const outMp4 = path.join(tmpDir, 'spotify_player.mp4');
+      execSync(`"${ffmpegPath}" -y -framerate ${fps} -i "${path.join(tmpDir, 'frame_%04d.jpg')}" -i "${audioFilePath}" -c:v libx264 -pix_fmt yuv420p -c:a aac -b:a 128k -shortest -t ${videoDuration} "${outMp4}"`);
+
+      const result = fs.readFileSync(outMp4);
+      return result;
+    } finally {
+      try {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      } catch (e) {}
+    }
+  }
+
   private async generateLocalBratVid(text: string): Promise<Buffer> {
         const fs = await import('fs');
         const path = await import('path');
@@ -1878,7 +2049,7 @@ private loadKaryawanData() {
     const stickerCommands = ['.stickermenu', 'stickermenu', '.stiker', 'stiker', '.hd', 'hd', '.brat', 'brat', '.bratvid', 'bratvid', '.smeme', 'smeme', '.qc', 'qc', '.toimg', 'toimg', '.togif', 'togif', '.stikerrandom', 'stikerrandom', '.stikerspongebob', 'stikerspongebob', '.tovideo', 'tovideo', '.rvo', 'rvo', '.hdvid', 'hdvid', '.emojimix', 'emojimix', '.emojigif', 'emojigif', '.bratgambar', 'bratgambar', '.attp', 'attp', '.logo', 'logo', '.wallpaper', 'wallpaper'];
     const kristenCommands = ['.kristenmenu', 'kristenmenu', '.ayatalkitab', 'ayatalkitab', '.doaayat', 'doaayat', '.kisahyesus', 'kisahyesus', '.jadwalgereja', 'jadwalgereja', '.namakitab', 'namakitab'];
     const islamCommands = ['.islammenu', 'islammenu', '.ayatkursi', 'ayatkursi', '.tekssholat', 'tekssholat', '.hadits', 'hadits', '.jadwalsholat', 'jadwalsholat', '.kisahnabi', 'kisahnabi', '.niatsholat', 'niatsholat', '.quotesislami', 'quotesislami'];
-    const downloadCommands = ['.downloadmenu', 'downloadmenu', '.autovoicenote', 'autovoicenote', '.autovn', 'autovn', '.tiktok', 'tiktok', '.tiktokaudiomp3', 'tiktokaudiomp3', '.playyt', 'playyt', '.playytmp4', 'playytmp4', '.capcut', 'capcut', '.facebook', 'facebook', '.instagram', 'instagram', '.fotosexy', 'fotosexy', '.fotoanime', 'fotoanime', '.pinterest', 'pinterest', '.ttsaudio', 'ttsaudio', '.tiktokslide', 'tiktokslide', '.ssweb', 'ssweb', '.gdrive', 'gdrive', '.mediafire', 'mediafire', '.videosexybikini', 'videosexybikini', '.vidsexyjepang', 'vidsexyjepang', '.vidsexyindonesia', 'vidsexyindonesia', '.vidsexymalaysia', 'vidsexymalaysia', '.vidsexychina', 'vidsexychina'];
+    const downloadCommands = ['.downloadmenu', 'downloadmenu', '.playspotify', 'playspotify', '.spotify', 'spotify', '.autovoicenote', 'autovoicenote', '.autovn', 'autovn', '.tiktok', 'tiktok', '.tiktokaudiomp3', 'tiktokaudiomp3', '.playyt', 'playyt', '.playytmp4', 'playytmp4', '.capcut', 'capcut', '.facebook', 'facebook', '.instagram', 'instagram', '.fotosexy', 'fotosexy', '.fotoanime', 'fotoanime', '.pinterest', 'pinterest', '.ttsaudio', 'ttsaudio', '.tiktokslide', 'tiktokslide', '.ssweb', 'ssweb', '.gdrive', 'gdrive', '.mediafire', 'mediafire', '.videosexybikini', 'videosexybikini', '.vidsexyjepang', 'vidsexyjepang', '.vidsexyindonesia', 'vidsexyindonesia', '.vidsexymalaysia', 'vidsexymalaysia', '.vidsexychina', 'vidsexychina'];
     const cecanCommands = ['.cecanmenu', 'cecanmenu', '.cecanchina', 'cecanchina', '.cecanhijab', 'cecanhijab', '.cecanindonesia', 'cecanindonesia', '.cecanjapan', 'cecanjapan', '.cecanjeni', 'cecanjeni', '.cecanjiso', 'cecanjiso', '.cecankorea', 'cecankorea', '.cecanmalaysia', 'cecanmalaysia', '.cecanjustinaxie', 'cecanjustinaxie', '.cecanrose', 'cecanrose', '.cecanthailand', 'cecanthailand', '.cecanvietnam', 'cecanvietnam'];
     const primbonCommands = ['.primbonmenu', 'primbonmenu', '.pantun', 'pantun', '.ceksial', 'ceksial', '.ramalannasib', 'ramalannasib', '.ramalanjodoh', 'ramalanjodoh', '.ramalancinta', 'ramalancinta', '.ramalankeburukan', 'ramalankeburukan', '.zodiak', 'zodiak', '.isidompet', 'isidompet', '.profesiku', 'profesiku', '.nulis', 'nulis'];
     const animeCommands = ['.animemenu', 'animemenu', '.animeakira', 'animeakira', '.animeasuna', 'animeasuna', '.animeeba', 'animeeba', '.animeelaina', 'animeelaina', '.animeemilia', 'animeemilia', '.animegremory', 'animegremory', '.animehinata', 'animehinata', '.animehusbu', 'animehusbu', '.animeisuzu', 'animeisuzu', '.animeitori', 'animeitori', '.animekagura', 'animekagura', '.animekanna', 'animekanna', '.animemiku', 'animemiku', '.animenezuko', 'animenezuko', '.animeloli', 'animeloli', '.animepokemon', 'animepokemon', '.animerem', 'animerem', '.animeryuko', 'animeryuko', '.animeshina', 'animeshina', '.animeshinka', 'animeshinka', '.animeshota', 'animeshota', '.animetejina', 'animetejina', '.animetoukachan', 'animetoukachan'];
@@ -2230,6 +2401,7 @@ _Kirim atau balas/reply foto dengan perintah di atas. Jika tanpa foto, otomatis 
     } else if (body === "downloadmenu" || body === ".downloadmenu" || body === "download menu" || body === ".download menu") {
       const downloadText = `📥 *Download Menu*
 
+│ .playspotify - putar musik Spotify real-time dengan tampilan visual bergerak & audio
 │ .autovoicenote - download/ubah audio/musik jadi Voice Note (Auto VN)
 │ .tiktok - download video dari link tiktok VT
 │ .tiktokaudiomp3 - download audio dari tiktok
@@ -4593,6 +4765,128 @@ _Catatan: Dikirim sbg dokumen karena terjadi error konversi._` }, { quoted: msg 
       } catch (err) {
         console.error("AutoVN error:", err);
         await this.sock.sendMessage(jid, { text: `❌ Gagal memproses Auto Voice Note: ${err instanceof Error ? err.message : 'Kesalahan jaringan'}` }, { quoted: msg });
+      }
+    } else if (body.startsWith(".playspotify ") || body === ".playspotify" || body.startsWith("playspotify ") || body === "playspotify" || body.startsWith(".spotify ") || body === ".spotify" || body.startsWith("spotify ") || body === "spotify") {
+      const q = messageContent.replace(/^\.?(playspotify|spotify)\s*/i, "").trim();
+      if (!q) {
+        await this.sock.sendMessage(jid, { 
+          text: `❌ *Format Salah!*\n\nKetik: *.playspotify <judul lagu atau link Spotify>*\nContoh:\n• *.playspotify Hebe Tien 要去什麼地方*\n• *.playspotify Mahalini Sial*\n• *.playspotify https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT*` 
+        }, { quoted: msg });
+        return;
+      }
+
+      await this.sock.sendMessage(jid, { 
+        text: `🟢 *Sedang memproses Play Spotify...*\n🔍 *Lagu:* "${q}"\n⏳ _Mengambil audio & merender tampilan pemutar bergerak real-time..._` 
+      }, { quoted: msg });
+
+      try {
+        let searchTitle = q;
+        let coverUrl = "";
+        let authorName = "";
+        const isSpotifyUrl = /^(https?:\/\/)?(open\.)?spotify\.com\/track\/.+$/i.test(q);
+
+        if (isSpotifyUrl) {
+          try {
+            const oembedRes = await axios.get(`https://open.spotify.com/oembed?url=${encodeURIComponent(q)}`, { timeout: 8000 });
+            if (oembedRes.data) {
+              searchTitle = oembedRes.data.title || q;
+              coverUrl = oembedRes.data.thumbnail_url || "";
+              authorName = oembedRes.data.author_name || "";
+            }
+          } catch (oembedErr) {
+            console.warn("Spotify oEmbed error:", oembedErr);
+          }
+        }
+
+        // Search music track
+        const search: any = await btch.yts(searchTitle);
+        let videoUrl = "";
+        let finalTitle = searchTitle;
+        let finalAuthor = authorName || "Spotify Music";
+        let durationTimestamp = "3:30";
+        let durationSeconds = 210;
+
+        if (search?.result?.videos && search.result.videos.length > 0) {
+          const firstVideo = search.result.videos[0];
+          videoUrl = firstVideo.url;
+          finalTitle = searchTitle !== q ? searchTitle : firstVideo.title;
+          if (!authorName) finalAuthor = firstVideo.author?.name || "Spotify Artist";
+          if (!coverUrl) coverUrl = firstVideo.image;
+          durationTimestamp = firstVideo.duration?.timestamp || "3:30";
+          durationSeconds = firstVideo.duration?.seconds || 210;
+        } else {
+          await this.sock.sendMessage(jid, { text: `❌ Lagu "${q}" tidak ditemukan di database musik.` }, { quoted: msg });
+          return;
+        }
+
+        // Download audio
+        let ytDownload: any;
+        for (let i = 0; i < 3; i++) {
+          try {
+            ytDownload = await (vredenYt as any).ytmp3(videoUrl);
+            if (ytDownload && ytDownload.status && ytDownload.download && ytDownload.download.url) break;
+          } catch (e) {}
+          await new Promise(r => setTimeout(r, 2000));
+        }
+
+        if (!ytDownload || !ytDownload.download || !ytDownload.download.url) {
+          await this.sock.sendMessage(jid, { text: `❌ Gagal mengambil audio musik. Silakan coba judul lain.` }, { quoted: msg });
+          return;
+        }
+
+        const dlAudioUrl = ytDownload.download.url;
+        const audioRes = await axios.get(dlAudioUrl, { responseType: 'arraybuffer', headers: { "User-Agent": "Mozilla/5.0" } });
+        const audioBuffer = Buffer.isBuffer(audioRes.data) ? audioRes.data : Buffer.from(audioRes.data);
+
+        // Fetch album cover buffer
+        let coverBuffer: Buffer | null = null;
+        if (coverUrl) {
+          try {
+            const imgRes = await axios.get(coverUrl, { responseType: 'arraybuffer', timeout: 8000 });
+            coverBuffer = Buffer.isBuffer(imgRes.data) ? imgRes.data : Buffer.from(imgRes.data);
+          } catch (imgErr) {
+            console.warn("Cover image download error:", imgErr);
+          }
+        }
+
+        // Save audio to temp file for video rendering
+        const tmpSpotId = Date.now() + Math.random().toString(36).substring(2, 7);
+        const tmpAudioPath = path.join(os.tmpdir(), `spotify_audio_${tmpSpotId}.mp3`);
+        fs.writeFileSync(tmpAudioPath, audioBuffer);
+
+        try {
+          // Render moving real-time Spotify Player MP4 video
+          const videoBuffer = await this.generateSpotifyPlayerVideo(
+            finalTitle,
+            finalAuthor,
+            coverBuffer,
+            tmpAudioPath,
+            durationTimestamp,
+            durationSeconds
+          );
+
+          // 1. Send the animated real-time Spotify player video
+          await this.sock.sendMessage(jid, {
+            video: videoBuffer,
+            caption: `🟢 *SPOTIFY LIVE PLAYER* 🎧\n\n📌 *Judul:* ${finalTitle}\n👤 *Artis:* ${finalAuthor}\n⏱ *Durasi:* ${durationTimestamp}\n⚡ *Status:* Memutar Musik (Real-Time)\n\n_Visual player bergerak secara real-time dan fisik menyesuaikan irama musik._`,
+            contextInfo: this.getMenuContextInfo()
+          }, { quoted: msg });
+
+          // 2. Send the full audio to automatically play the music
+          await this.sock.sendMessage(jid, {
+            audio: audioBuffer,
+            mimetype: 'audio/mpeg',
+            fileName: `${finalTitle}.mp3`,
+            contextInfo: this.getMenuContextInfo()
+          }, { quoted: msg });
+
+          this.broadcastState(`Played Spotify song: ${finalTitle}`);
+        } finally {
+          if (fs.existsSync(tmpAudioPath)) fs.unlinkSync(tmpAudioPath);
+        }
+      } catch (err: any) {
+        console.error("Playspotify error:", err);
+        await this.sock.sendMessage(jid, { text: `❌ Terjadi kesalahan saat memutar lagu: ${err?.message || err}` }, { quoted: msg });
       }
     } else if (body.startsWith(".playyt ") || body.startsWith("playyt ")) {
       const q = messageContent.replace(/^\.?playyt\s*/i, "").trim();
