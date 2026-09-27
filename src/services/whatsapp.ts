@@ -605,92 +605,6 @@ private loadKaryawanData() {
     }
   }
 
-  private async generateNGLCard(messageText: string, targetName: string = "Pesan Anonim"): Promise<Buffer> {
-    const sharp = (await import('sharp')).default;
-    const width = 640;
-    const height = 840;
-
-    const escapeXml = (unsafe: string) => {
-      return (unsafe || '').replace(/[<>&'"]/g, (c) => {
-        switch (c) {
-          case '<': return '&lt;';
-          case '>': return '&gt;';
-          case '&': return '&amp;';
-          case '\'': return '&apos;';
-          case '"': return '&quot;';
-          default: return c;
-        }
-      });
-    };
-
-    const words = (messageText || 'Halo!').split(/\s+/);
-    const lines: string[] = [];
-    let cur = '';
-    for (const w of words) {
-      if ((cur + ' ' + w).length > 26) {
-        if (cur.trim()) lines.push(cur.trim());
-        cur = w;
-      } else {
-        cur += (cur ? ' ' : '') + w;
-      }
-    }
-    if (cur.trim()) lines.push(cur.trim());
-
-    const displayLines = lines.slice(0, 8);
-    if (lines.length > 8) {
-      displayLines[7] = displayLines[7].substring(0, 22) + '...';
-    }
-
-    const safeTarget = escapeXml(targetName.length > 24 ? targetName.substring(0, 22) + '...' : targetName);
-    const textSvg = displayLines
-      .map((l, i) => `<tspan x="320" dy="${i === 0 ? 0 : 36}">${escapeXml(l)}</tspan>`)
-      .join('');
-
-    const svg = `
-    <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="nglBg" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#FF543E" />
-          <stop offset="50%" stop-color="#FF2E63" />
-          <stop offset="100%" stop-color="#E8005A" />
-        </linearGradient>
-      </defs>
-      
-      <!-- Background Gradient -->
-      <rect width="100%" height="100%" fill="url(#nglBg)" />
-      
-      <!-- Top Pill -->
-      <rect x="140" y="105" width="360" height="52" rx="26" fill="rgba(255,255,255,0.22)" />
-      <text x="320" y="137" fill="#ffffff" font-size="18" font-family="sans-serif" font-weight="bold" text-anchor="middle">send me anonymous messages</text>
-      
-      <!-- White Center Card with subtle shadow -->
-      <rect x="48" y="188" width="544" height="444" rx="38" fill="#000000" opacity="0.15" />
-      <rect x="50" y="185" width="540" height="440" rx="36" fill="#ffffff" />
-      
-      <!-- Subheader inside card -->
-      <circle cx="110" cy="245" r="26" fill="#FFF0F5" />
-      <text x="110" y="254" font-size="26" text-anchor="middle">💌</text>
-      <text x="155" y="243" fill="#1a1a1a" font-size="20" font-family="sans-serif" font-weight="bold">${safeTarget}</text>
-      <text x="155" y="265" fill="#888888" font-size="14" font-family="sans-serif">ngl.link / anonymous</text>
-      
-      <!-- Divider -->
-      <line x1="80" y1="295" x2="560" y2="295" stroke="#f0f0f0" stroke-width="2" />
-      
-      <!-- Anonymous Message Body -->
-      <text x="320" y="365" fill="#111111" font-size="24" font-family="sans-serif" font-weight="bold" text-anchor="middle">
-        ${textSvg}
-      </text>
-      
-      <!-- Bottom Footer -->
-      <rect x="190" y="665" width="260" height="46" rx="23" fill="rgba(255,255,255,0.22)" />
-      <text x="320" y="694" fill="#ffffff" font-size="16" font-family="sans-serif" font-weight="bold" text-anchor="middle">🔒 Anonymous &amp; Secret</text>
-      <text x="320" y="765" fill="rgba(255,255,255,0.75)" font-size="14" font-family="sans-serif" text-anchor="middle">NGL • Anonymous Messages</text>
-    </svg>
-    `;
-
-    return await sharp(Buffer.from(svg)).png().toBuffer();
-  }
-
   private async generateLocalBratVid(text: string): Promise<Buffer> {
         const fs = await import('fs');
         const path = await import('path');
@@ -2129,7 +2043,7 @@ private loadKaryawanData() {
     const requestedCmd = body.split(/[\s\n]+/)[0];
     const ownerCommands = ['.createsaluran', 'createsaluran', '.buatsaluran', 'buatsaluran', '.addtextnama', 'addtextnama', '.deltextnama', 'deltextnama', '.addwalinkcha', 'addwalinkcha', '.delwalinkcha', 'delwalinkcha', '.listwalinkcha', 'listwalinkcha', '.cekwalinkcha', 'cekwalinkcha', '.ownermenu', 'ownermenu', '.antibot', 'antibot', '.autoread', 'autoread', '.savekontak', 'savekontak', '.broadcast', 'broadcast', '.restartbot', 'restartbot', '.addpremium', 'addpremium', '.addprem', 'addprem', '.addowner', 'addowner', '.delowner', 'delowner', '.listowner', 'listowner', '.listpremium', 'listpremium', '.delpremium', 'delpremium', '.setbotpp', 'setbotpp', '.setbotname', 'setbotname', '.addnamabot', 'addnamabot', '.delnamabot', 'delnamabot', '.totalfitur', 'totalfitur', '.addprefix', 'addprefix', '.delprefix', 'delprefix', '.listprefix', 'listprefix', '.addpoweredby', 'addpoweredby', '.delpoweredby', 'delpoweredby', '.listpoweredby', 'listpoweredby', '.linkset', 'linkset', '.dellinkset', 'dellinkset', '.addcmd', 'addcmd', '.delcmd', 'delcmd', '.listcmd', 'listcmd', '.self', 'self', '.publik', 'publik', '.public', 'public', '.mode', 'mode', '.botmode', 'botmode', '.setcoverbot', 'setcoverbot', '.delcoverbot', 'delcoverbot', '.setcovervideo', 'setcovervideo', '.delsetcovervideo', 'delsetcovervideo', '.delcovervideo', 'delcovervideo', '.anticall', 'anticall', '.autotyping', 'autotyping', '.addsewa', 'addsewa', '.delsewa', 'delsewa', '.listsewa', 'listsewa', '.joingc', 'joingc', '.creategc', 'creategc', '.addsticker', 'addsticker', '.delsticker', 'delsticker', '.addlimit', 'addlimit', '.dellimit', 'dellimit', '.listlimit', 'listlimit', '.autoblockprivate', 'autoblockprivate', '.delautoblockprivate', 'delautoblockprivate'];
     const groupCommands = ['.afk', 'afk', '.joinch', 'joinch', '.cekidgc', 'cekidgc', '.infouser', 'infouser', '.tagadmin', 'tagadmin', '.infogrup', 'infogrup', '.leaderboard', 'leaderboard', '.totalchat', 'totalchat', '.groupmenu', 'groupmenu', '.delete', 'delete', '.hidetag', 'hidetag', '.kick', 'kick', '.add', 'add', '.open', 'open', '.close', 'close', '.open2', 'open2', '.close2', 'close2', '.antilinkall', 'antilinkall', '.linkgc', 'linkgc', '.setppgc', 'setppgc', '.delppgc', 'delppgc', '.setwelcome', 'setwelcome', '.setbye', 'setbye', '.welcome', 'welcome', '.goodbye', 'goodbye', '.antitagsw', 'antitagsw', '.antivideo', 'antivideo', '.antifoto', 'antifoto', '.antifoto1x', 'antifoto1x', '.antistiker', 'antistiker', '.antispam', 'antispam', '.setnamegc', 'setnamegc', '.setdescgc', 'setdescgc', '.culikswgc', 'culikswgc', '.culikprofilegc', 'culikprofilegc', '.kickall', 'kickall', '.sewabot', 'sewabot', '.promote', 'promote', '.demote', 'demote', '.werewolf', 'werewolf', '.joinww', 'joinww', '.startww', 'startww', '.mutegc', 'mutegc', '.resetlink', 'resetlink', '.tagall', 'tagall', '.setbotbio', 'setbotbio', '.delbotbio', 'delbotbio', '.antivirtex', 'antivirtex', '.antitoxic', 'antitoxic', '.menfess', 'menfess', '.confess', 'confess', '.balasmenfess', 'balasmenfess', '.tolakmenfess', 'tolakmenfess', '.stopmenfess', 'stopmenfess', '.warn', 'warn', '.listwarn', 'listwarn', '.delwarn', 'delwarn', '.infowarn', 'infowarn'];
-    const funCommands = ['.ceksifat', 'ceksifat', '.cekkenakalan', 'cekkenakalan', '.cekperawan', 'cekperawan', '.cekperjaka', 'cekperjaka', '.cekjanda', 'cekjanda', '.cekduda', 'cekduda', '.bego', 'bego', '.rate', 'rate', '.top', 'top', '.funmenu', 'funmenu', '.ngl', 'ngl', '.cekkhodam', 'cekkhodam', '.cekganteng', 'cekganteng', '.cekcantik', 'cekcantik', '.cekjodoh', 'cekjodoh', '.ceklesby', 'ceklesby', '.cekpasangan', 'cekpasangan', '.cekgay', 'cekgay', '.cekhoby', 'cekhoby', '.cekkesetiaan', 'cekkesetiaan', '.jadian', 'jadian', '.kiss', 'kiss', '.quotes', 'quotes', '.avatar', 'avatar', '.ppcouple', 'ppcouple', '.infonegara', 'infonegara', '.cekwibu', 'cekwibu', '.meme', 'meme', '.waifu', 'waifu', '.ceksange', 'ceksange', '.cekkaya', 'cekkaya', '.cekbucin', 'cekbucin', '.artinama', 'artinama', '.cekmasadepan', 'cekmasadepan', '.faktadunia', 'faktadunia', '.cekgempa', 'cekgempa', '.cekcuaca', 'cekcuaca'];
+    const funCommands = ['.ceksifat', 'ceksifat', '.cekkenakalan', 'cekkenakalan', '.cekperawan', 'cekperawan', '.cekperjaka', 'cekperjaka', '.cekjanda', 'cekjanda', '.cekduda', 'cekduda', '.bego', 'bego', '.rate', 'rate', '.top', 'top', '.funmenu', 'funmenu', '.cekkhodam', 'cekkhodam', '.cekganteng', 'cekganteng', '.cekcantik', 'cekcantik', '.cekjodoh', 'cekjodoh', '.ceklesby', 'ceklesby', '.cekpasangan', 'cekpasangan', '.cekgay', 'cekgay', '.cekhoby', 'cekhoby', '.cekkesetiaan', 'cekkesetiaan', '.jadian', 'jadian', '.kiss', 'kiss', '.quotes', 'quotes', '.avatar', 'avatar', '.ppcouple', 'ppcouple', '.infonegara', 'infonegara', '.cekwibu', 'cekwibu', '.meme', 'meme', '.waifu', 'waifu', '.ceksange', 'ceksange', '.cekkaya', 'cekkaya', '.cekbucin', 'cekbucin', '.artinama', 'artinama', '.cekmasadepan', 'cekmasadepan', '.faktadunia', 'faktadunia', '.cekgempa', 'cekgempa', '.cekcuaca', 'cekcuaca'];
     const margaCommands = ['.margamenu', 'margamenu', '.cekpariban', 'cekpariban', '.cektartulang', 'cektartulang', '.cektarito', 'cektarito', '.cekpadan', 'cekpadan'];
     const videoCommands = ['.videomenu', 'videomenu', '.tiktokgirl', 'tiktokgirl', '.tiktoktobrut', 'tiktoktobrut', '.tiktokkayes', 'tiktokkayes', '.tiktokhot', 'tiktokhot', '.tiktokghea', 'tiktokghea', '.tiktokbocil', 'tiktokbocil', '.tiktoklesbi', 'tiktoklesbi', '.tiktokgay', 'tiktokgay', '.tiktokartis', 'tiktokartis', '.tiktokpacaran', 'tiktokpacaran', '.tiktokanjing', 'tiktokanjing', '.tiktokkucing', 'tiktokkucing', '.tiktokfreefire', 'tiktokfreefire', '.tiktokpubg', 'tiktokpubg', '.tiktoknikah', 'tiktoknikah', '.tiktokpointblank', 'tiktokpointblank'];
     const stickerCommands = ['.stickermenu', 'stickermenu', '.stiker', 'stiker', '.hd', 'hd', '.brat', 'brat', '.bratvid', 'bratvid', '.smeme', 'smeme', '.qc', 'qc', '.toimg', 'toimg', '.togif', 'togif', '.stikerrandom', 'stikerrandom', '.stikerspongebob', 'stikerspongebob', '.tovideo', 'tovideo', '.rvo', 'rvo', '.hdvid', 'hdvid', '.emojimix', 'emojimix', '.emojigif', 'emojigif', '.bratgambar', 'bratgambar', '.attp', 'attp', '.logo', 'logo', '.wallpaper', 'wallpaper'];
@@ -2527,7 +2441,7 @@ _Kirim atau balas/reply foto dengan perintah di atas. Jika tanpa foto, otomatis 
       await this.sendMenuWithCover(jid, islamText, this.getFakeMenuQuote(senderJid, msg.pushName || "User"));
       this.broadcastState(`Responded to islammenu command`);
     } else if (body === "funmenu" || body === ".funmenu" || body === "fun menu" || body === ".fun menu") {
-      const funText = `🤡 *Fun Menu*\n\n│ .ngl - pesan anonim & kartu NGL\n│ .cekkhodam\n│ .cekganteng\n│ .cekcantik\n│ .cekjodoh\n│ .ceklesby\n│ .cekpasangan\n│ .cekgay\n│ .cekhoby\n│ .cekkesetiaan\n│ .jadian\n│ .kiss\n│ .quotes\n│ .avatar\n│ .ppcouple\n│ .ceksifat\n│ .cekkenakalan\n│ .cekperawan\n│ .cekperjaka\n│ .cekjanda\n│ .cekduda\n│ .bego\n│ .rate\n│ .top\n│ .infonegara\n│ .cekwibu\n│ .meme\n│ .waifu\n│ .ceksange\n│ .cekkaya\n│ .cekbucin\n│ .artinama\n│ .cekmasadepan\n│ .faktadunia\n│ .cekgempa\n│ .cekcuaca`;
+      const funText = `🤡 *Fun Menu*\n\n│ .cekkhodam\n│ .cekganteng\n│ .cekcantik\n│ .cekjodoh\n│ .ceklesby\n│ .cekpasangan\n│ .cekgay\n│ .cekhoby\n│ .cekkesetiaan\n│ .jadian\n│ .kiss\n│ .quotes\n│ .avatar\n│ .ppcouple\n│ .ceksifat\n│ .cekkenakalan\n│ .cekperawan\n│ .cekperjaka\n│ .cekjanda\n│ .cekduda\n│ .bego\n│ .rate\n│ .top\n│ .infonegara\n│ .cekwibu\n│ .meme\n│ .waifu\n│ .ceksange\n│ .cekkaya\n│ .cekbucin\n│ .artinama\n│ .cekmasadepan\n│ .faktadunia\n│ .cekgempa\n│ .cekcuaca`;
       await this.sendMenuWithCover(jid, funText, this.getFakeMenuQuote(senderJid, msg.pushName || "User"));
       this.broadcastState(`Responded to funmenu command`);
     } else if (body === "cecanmenu" || body === ".cecanmenu" || body === "cecan menu" || body === ".cecan menu") {
@@ -6905,114 +6819,6 @@ Link referensi: ${randomItem.link}` }, { quoted: msg });
         }
       } else {
         await this.sock.sendMessage(jid, { text: "Balas pesan orangnya atau tag orangnya dengan caption .culikprofilegc" }, { quoted: msg });
-      }
-    } else if (body.startsWith(".ngl ") || body === ".ngl" || body.startsWith("ngl ") || body === "ngl") {
-      const q = messageContent.replace(/^\.?ngl\s*/i, "").trim();
-      if (!q) {
-        const nglGuide = `💌 *NGL - PESAN ANONIM* 🔒\n\n` +
-          `Fitur untuk mengirim atau menghasilkan kartu pesan anonim/rahasia tanpa diketahui identitasmu!\n\n` +
-          `*Cara Penggunaan:*\n` +
-          `1️⃣ *Kirim ke Link / Username NGL Target:*\n` +
-          `   • .ngl <username_ngl> | <pesan>\n` +
-          `   • Contoh: *.ngl rizki_putra | Semangat terus ya kuliahnya!*\n` +
-          `   • Contoh: *.ngl https://ngl.link/siti_cantik | Diam-diam aku mengagumimu*\n\n` +
-          `2️⃣ *Kirim Pesan Anonim ke WhatsApp Teman:*\n` +
-          `   • .ngl <nomor_wa> | <pesan>\n` +
-          `   • Contoh: *.ngl 081234567890 | Hai, ada yang naksir kamu nih!*\n\n` +
-          `3️⃣ *Buat Kartu Gambar Pesan Anonim NGL:*\n` +
-          `   • .ngl <pesan/pertanyaan>\n` +
-          `   • Contoh: *.ngl Ada yang diam-diam suka sama kamu!*`;
-        await this.sock.sendMessage(jid, { text: nglGuide, contextInfo: this.getMenuContextInfo() }, { quoted: msg });
-        return;
-      }
-
-      await this.sock.sendMessage(jid, { text: `⏳ *Sedang memproses pesan anonim NGL...*` }, { quoted: msg });
-
-      try {
-        if (q.includes("|")) {
-          const parts = q.split("|");
-          const target = parts[0].trim();
-          const messageText = parts.slice(1).join("|").trim();
-
-          if (!messageText) {
-            await this.sock.sendMessage(jid, { text: `❌ Harap sertakan pesan setelah tanda (|).\nContoh: *.ngl username | pesan kamu*` }, { quoted: msg });
-            return;
-          }
-
-          const targetCleanNum = target.replace(/[^0-9]/g, "");
-          const isPhone = targetCleanNum.length >= 9 && (targetCleanNum.startsWith("08") || targetCleanNum.startsWith("62") || targetCleanNum.startsWith("8") || targetCleanNum.startsWith("48") || targetCleanNum.startsWith("1"));
-
-          if (isPhone) {
-            let numFormatted = targetCleanNum;
-            if (numFormatted.startsWith("0")) numFormatted = "62" + numFormatted.substring(1);
-            else if (numFormatted.startsWith("8")) numFormatted = "62" + numFormatted;
-            const targetJid = numFormatted + "@s.whatsapp.net";
-
-            const cardBuffer = await this.generateNGLCard(messageText, "Pesan Rahasia");
-
-            await this.sock.sendMessage(targetJid, {
-              image: cardBuffer,
-              caption: `💌 *PESAN ANONIM MASUK (NGL)* 🔒\n\nSeseorang telah mengirimkan pesan rahasia secara anonim kepadamu melalui bot:\n\n💬 "${messageText}"\n\n━━━━━━━━━━━━━━━━━━━━\n_Pesan ini dikirim secara 100% anonim dan terlindungi._`
-            });
-
-            await this.sock.sendMessage(jid, {
-              image: cardBuffer,
-              caption: `✅ *Pesan Anonim NGL Berhasil Terkirim!*\n\n📱 *Tujuan:* +${numFormatted}\n💬 *Pesan:* "${messageText}"\n🔒 *Status:* Identitas pengirim dirahasiakan 100%.`,
-              contextInfo: this.getMenuContextInfo()
-            }, { quoted: msg });
-
-            this.broadcastState(`Sent anonymous NGL message to WhatsApp +${numFormatted}`);
-          } else {
-            const cleanUser = target.replace(/https?:\/\/ngl\.link\//i, "").replace(/[@/]/g, "").trim();
-
-            let submittedToApi = false;
-            try {
-              const res = await axios.post("https://ngl.link/api/submit", {
-                username: cleanUser,
-                question: messageText,
-                deviceId: "ngl-bot-" + Date.now() + Math.random().toString(36).substring(2, 6)
-              }, {
-                headers: {
-                  "Content-Type": "application/x-www-form-urlencoded",
-                  "User-Agent": "Mozilla/5.0 (Linux; Android 10)"
-                },
-                timeout: 10000
-              });
-              if (res.status === 200) submittedToApi = true;
-            } catch (apiErr) {
-              console.warn("NGL submit API warning:", apiErr);
-            }
-
-            const cardBuffer = await this.generateNGLCard(messageText, `@${cleanUser}`);
-
-            const captionText = `✅ *Pesan Anonim NGL Berhasil Dibuat & Dikirim!* 💌\n\n` +
-              `🎯 *Target NGL:* @${cleanUser}\n` +
-              `🔗 *Link:* https://ngl.link/${cleanUser}\n` +
-              `💬 *Pesan:* "${messageText}"\n` +
-              `🔒 *Status:* ${submittedToApi ? "Berhasil terkirim ke inbox NGL target! ✅" : "Kartu pesan anonim berhasil dibuat! ✅"}`;
-
-            await this.sock.sendMessage(jid, {
-              image: cardBuffer,
-              caption: captionText,
-              contextInfo: this.getMenuContextInfo()
-            }, { quoted: msg });
-
-            this.broadcastState(`Generated & sent NGL message to @${cleanUser}`);
-          }
-        } else {
-          const cardBuffer = await this.generateNGLCard(q, "Pesan Anonim");
-
-          await this.sock.sendMessage(jid, {
-            image: cardBuffer,
-            caption: `💌 *KARTU PESAN ANONIM (NGL)* 🔒\n\n💬 *Pesan:* "${q}"\n\n_Bagikan kartu ini ke status atau media sosial untuk menerima pesan anonim._`,
-            contextInfo: this.getMenuContextInfo()
-          }, { quoted: msg });
-
-          this.broadcastState(`Generated NGL card for anonymous message`);
-        }
-      } catch (err: any) {
-        console.error("NGL error:", err);
-        await this.sock.sendMessage(jid, { text: `❌ Terjadi kesalahan saat memproses NGL: ${err?.message || err}` }, { quoted: msg });
       }
     } else if (body.startsWith(".ceksifat") || body.startsWith("ceksifat")) {
        const sifatList = ["Pemarah", "Penyabar", "Pemalas", "Rajin", "Baik Hati", "Pelit", "Cengeng", "Pemberani", "Penakut", "Ceria"];
