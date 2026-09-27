@@ -75,7 +75,7 @@ private karyawanData = {
   private autoTypingEnabled: boolean = false;
   private botMode: "self" | "publik" = "publik";
   private menuLink: string | null = "jadibotbatakvip.biz.id";
-  private groupSettings = new Map<string, { welcomeEnabled?: boolean, welcomeMessage?: string, goodbyeEnabled?: boolean, goodbyeMessage?: string, antivideo?: boolean, antifoto?: boolean, antifoto1x?: boolean, antistiker?: boolean, antispam?: boolean, antitagsw?: boolean, antivirtex?: boolean, antitoxic?: boolean, antilinkall?: boolean, warns?: Record<string, number>, storeList?: Record<string, string>, setProses?: string, setDone?: string }>();
+  private groupSettings = new Map<string, { welcomeEnabled?: boolean, welcomeMessage?: string, goodbyeEnabled?: boolean, goodbyeMessage?: string, antivideo?: boolean, antifoto?: boolean, antidocument?: boolean, antijudol?: boolean, antifoto1x?: boolean, antistiker?: boolean, antispam?: boolean, antitagsw?: boolean, antivirtex?: boolean, antitoxic?: boolean, antilinkall?: boolean, warns?: Record<string, number>, storeList?: Record<string, string>, setProses?: string, setDone?: string }>();
   
   private connectedAt: number | null = null;
   
@@ -1806,6 +1806,7 @@ private loadKaryawanData() {
       const participant = msg.key.participant;
       const isVideoInfo = messageObj?.videoMessage;
       const isImageInfo = messageObj?.imageMessage;
+      const isDocumentInfo = messageObj?.documentMessage || messageObj?.documentWithCaptionMessage;
       const isStickerInfo = messageObj?.stickerMessage;
       const isViewOnceInfo = messageObj?.viewOnceMessage || messageObj?.viewOnceMessageV2 || messageObj?.viewOnceMessageV2Extension || messageObj?.imageMessage?.viewOnce || messageObj?.videoMessage?.viewOnce;
       const textInfo = getMessageText(messageObj);
@@ -1819,6 +1820,11 @@ private loadKaryawanData() {
       if (this.groupSettings.get(jid)?.antifoto && isImageInfo) {
         shouldDelete = true;
         reason = "antifoto";
+      }
+
+      if (this.groupSettings.get(jid)?.antidocument && isDocumentInfo) {
+        shouldDelete = true;
+        reason = "antidocument";
       }
 
       if (this.groupSettings.get(jid)?.antifoto1x && isViewOnceInfo) {
@@ -1844,6 +1850,16 @@ private loadKaryawanData() {
             if (this.groupSettings.get(jid)?.antilinkall && textInfo && textInfo.match(/https?:\/\/[^\s]+/i)) {
          shouldDelete = true;
          reason = "antilinkall";
+      }
+
+      // Anti Judol (Judi Online) - cek teks dan caption media
+      const judolRegex = /\b(slot|gacor|zeus|pragmatic|maxwin|depo|wd|togel|casino|judi|judol|rtp|scatter|olympus|mahjong|sensational|jackpot|freebet|poker|sbobet|bandar|rungkad)\b|garansi\s*kekalahan|bonus\s*new\s*member|link\s*gacor|situs\s*gacor|daftar\s*slot|anti\s*rungkad|agen\s*slot|pola\s*slot|bocoran\s*slot|sweet\s*bonanza|gates\s*of\s*olympus/i;
+      const mediaCaption = messageObj?.imageMessage?.caption || messageObj?.videoMessage?.caption || messageObj?.documentMessage?.caption || messageObj?.documentWithCaptionMessage?.message?.documentMessage?.caption || "";
+      const fullTextToCheck = `${textInfo || ""} ${mediaCaption}`.trim();
+
+      if (this.groupSettings.get(jid)?.antijudol && fullTextToCheck && judolRegex.test(fullTextToCheck)) {
+        shouldDelete = true;
+        reason = "antijudol";
       }
 
       const toxicWords = ["anjing", "babi", "bangsat", "kontol", "memek", "jembut", "ngentot", "tolol", "goblok"];
@@ -2041,8 +2057,8 @@ private loadKaryawanData() {
     }
     
     const requestedCmd = body.split(/[\s\n]+/)[0];
-    const ownerCommands = ['.createsaluran', 'createsaluran', '.buatsaluran', 'buatsaluran', '.addtextnama', 'addtextnama', '.deltextnama', 'deltextnama', '.addwalinkcha', 'addwalinkcha', '.delwalinkcha', 'delwalinkcha', '.listwalinkcha', 'listwalinkcha', '.cekwalinkcha', 'cekwalinkcha', '.ownermenu', 'ownermenu', '.antibot', 'antibot', '.autoread', 'autoread', '.savekontak', 'savekontak', '.broadcast', 'broadcast', '.restartbot', 'restartbot', '.addpremium', 'addpremium', '.addprem', 'addprem', '.addowner', 'addowner', '.delowner', 'delowner', '.listowner', 'listowner', '.listpremium', 'listpremium', '.delpremium', 'delpremium', '.setbotpp', 'setbotpp', '.setbotname', 'setbotname', '.addnamabot', 'addnamabot', '.delnamabot', 'delnamabot', '.totalfitur', 'totalfitur', '.addprefix', 'addprefix', '.delprefix', 'delprefix', '.listprefix', 'listprefix', '.addpoweredby', 'addpoweredby', '.delpoweredby', 'delpoweredby', '.listpoweredby', 'listpoweredby', '.linkset', 'linkset', '.dellinkset', 'dellinkset', '.addcmd', 'addcmd', '.delcmd', 'delcmd', '.listcmd', 'listcmd', '.self', 'self', '.publik', 'publik', '.public', 'public', '.mode', 'mode', '.botmode', 'botmode', '.setcoverbot', 'setcoverbot', '.delcoverbot', 'delcoverbot', '.setcovervideo', 'setcovervideo', '.delsetcovervideo', 'delsetcovervideo', '.delcovervideo', 'delcovervideo', '.anticall', 'anticall', '.autotyping', 'autotyping', '.addsewa', 'addsewa', '.delsewa', 'delsewa', '.listsewa', 'listsewa', '.joingc', 'joingc', '.creategc', 'creategc', '.addsticker', 'addsticker', '.delsticker', 'delsticker', '.addlimit', 'addlimit', '.dellimit', 'dellimit', '.listlimit', 'listlimit', '.autoblockprivate', 'autoblockprivate', '.delautoblockprivate', 'delautoblockprivate'];
-    const groupCommands = ['.afk', 'afk', '.joinch', 'joinch', '.cekidgc', 'cekidgc', '.infouser', 'infouser', '.tagadmin', 'tagadmin', '.infogrup', 'infogrup', '.leaderboard', 'leaderboard', '.totalchat', 'totalchat', '.groupmenu', 'groupmenu', '.delete', 'delete', '.hidetag', 'hidetag', '.kick', 'kick', '.add', 'add', '.open', 'open', '.close', 'close', '.open2', 'open2', '.close2', 'close2', '.antilinkall', 'antilinkall', '.linkgc', 'linkgc', '.setppgc', 'setppgc', '.delppgc', 'delppgc', '.setwelcome', 'setwelcome', '.setbye', 'setbye', '.welcome', 'welcome', '.goodbye', 'goodbye', '.antitagsw', 'antitagsw', '.antivideo', 'antivideo', '.antifoto', 'antifoto', '.antifoto1x', 'antifoto1x', '.antistiker', 'antistiker', '.antispam', 'antispam', '.setnamegc', 'setnamegc', '.setdescgc', 'setdescgc', '.culikswgc', 'culikswgc', '.culikprofilegc', 'culikprofilegc', '.kickall', 'kickall', '.sewabot', 'sewabot', '.promote', 'promote', '.demote', 'demote', '.werewolf', 'werewolf', '.joinww', 'joinww', '.startww', 'startww', '.mutegc', 'mutegc', '.resetlink', 'resetlink', '.tagall', 'tagall', '.setbotbio', 'setbotbio', '.delbotbio', 'delbotbio', '.antivirtex', 'antivirtex', '.antitoxic', 'antitoxic', '.menfess', 'menfess', '.confess', 'confess', '.balasmenfess', 'balasmenfess', '.tolakmenfess', 'tolakmenfess', '.stopmenfess', 'stopmenfess', '.warn', 'warn', '.listwarn', 'listwarn', '.delwarn', 'delwarn', '.infowarn', 'infowarn'];
+    const ownerCommands = ['.upchannel', 'upchannel', '.createsaluran', 'createsaluran', '.buatsaluran', 'buatsaluran', '.addtextnama', 'addtextnama', '.deltextnama', 'deltextnama', '.addwalinkcha', 'addwalinkcha', '.delwalinkcha', 'delwalinkcha', '.listwalinkcha', 'listwalinkcha', '.cekwalinkcha', 'cekwalinkcha', '.ownermenu', 'ownermenu', '.antibot', 'antibot', '.autoread', 'autoread', '.savekontak', 'savekontak', '.broadcast', 'broadcast', '.restartbot', 'restartbot', '.addpremium', 'addpremium', '.addprem', 'addprem', '.addowner', 'addowner', '.delowner', 'delowner', '.listowner', 'listowner', '.listpremium', 'listpremium', '.delpremium', 'delpremium', '.setbotpp', 'setbotpp', '.setbotname', 'setbotname', '.addnamabot', 'addnamabot', '.delnamabot', 'delnamabot', '.totalfitur', 'totalfitur', '.addprefix', 'addprefix', '.delprefix', 'delprefix', '.listprefix', 'listprefix', '.addpoweredby', 'addpoweredby', '.delpoweredby', 'delpoweredby', '.listpoweredby', 'listpoweredby', '.linkset', 'linkset', '.dellinkset', 'dellinkset', '.addcmd', 'addcmd', '.delcmd', 'delcmd', '.listcmd', 'listcmd', '.self', 'self', '.publik', 'publik', '.public', 'public', '.mode', 'mode', '.botmode', 'botmode', '.setcoverbot', 'setcoverbot', '.delcoverbot', 'delcoverbot', '.setcovervideo', 'setcovervideo', '.delsetcovervideo', 'delsetcovervideo', '.delcovervideo', 'delcovervideo', '.anticall', 'anticall', '.autotyping', 'autotyping', '.addsewa', 'addsewa', '.delsewa', 'delsewa', '.listsewa', 'listsewa', '.joingc', 'joingc', '.creategc', 'creategc', '.addsticker', 'addsticker', '.delsticker', 'delsticker', '.addlimit', 'addlimit', '.dellimit', 'dellimit', '.listlimit', 'listlimit', '.autoblockprivate', 'autoblockprivate', '.delautoblockprivate', 'delautoblockprivate'];
+    const groupCommands = ['.antijudol', 'antijudol', '.antidocument', 'antidocument', '.antidokumen', 'antidokumen', '.afk', 'afk', '.joinch', 'joinch', '.cekidgc', 'cekidgc', '.infouser', 'infouser', '.tagadmin', 'tagadmin', '.infogrup', 'infogrup', '.leaderboard', 'leaderboard', '.totalchat', 'totalchat', '.groupmenu', 'groupmenu', '.delete', 'delete', '.hidetag', 'hidetag', '.kick', 'kick', '.add', 'add', '.open', 'open', '.close', 'close', '.open2', 'open2', '.close2', 'close2', '.antilinkall', 'antilinkall', '.linkgc', 'linkgc', '.setppgc', 'setppgc', '.delppgc', 'delppgc', '.setwelcome', 'setwelcome', '.setbye', 'setbye', '.welcome', 'welcome', '.goodbye', 'goodbye', '.antitagsw', 'antitagsw', '.antivideo', 'antivideo', '.antifoto', 'antifoto', '.antifoto1x', 'antifoto1x', '.antistiker', 'antistiker', '.antispam', 'antispam', '.setnamegc', 'setnamegc', '.setdescgc', 'setdescgc', '.culikswgc', 'culikswgc', '.culikprofilegc', 'culikprofilegc', '.kickall', 'kickall', '.sewabot', 'sewabot', '.promote', 'promote', '.demote', 'demote', '.werewolf', 'werewolf', '.joinww', 'joinww', '.startww', 'startww', '.mutegc', 'mutegc', '.resetlink', 'resetlink', '.tagall', 'tagall', '.setbotbio', 'setbotbio', '.delbotbio', 'delbotbio', '.antivirtex', 'antivirtex', '.antitoxic', 'antitoxic', '.menfess', 'menfess', '.confess', 'confess', '.balasmenfess', 'balasmenfess', '.tolakmenfess', 'tolakmenfess', '.stopmenfess', 'stopmenfess', '.warn', 'warn', '.listwarn', 'listwarn', '.delwarn', 'delwarn', '.infowarn', 'infowarn'];
     const funCommands = ['.ceksifat', 'ceksifat', '.cekkenakalan', 'cekkenakalan', '.cekperawan', 'cekperawan', '.cekperjaka', 'cekperjaka', '.cekjanda', 'cekjanda', '.cekduda', 'cekduda', '.bego', 'bego', '.rate', 'rate', '.top', 'top', '.funmenu', 'funmenu', '.cekkhodam', 'cekkhodam', '.cekganteng', 'cekganteng', '.cekcantik', 'cekcantik', '.cekjodoh', 'cekjodoh', '.ceklesby', 'ceklesby', '.cekpasangan', 'cekpasangan', '.cekgay', 'cekgay', '.cekhoby', 'cekhoby', '.cekkesetiaan', 'cekkesetiaan', '.jadian', 'jadian', '.kiss', 'kiss', '.quotes', 'quotes', '.avatar', 'avatar', '.ppcouple', 'ppcouple', '.infonegara', 'infonegara', '.cekwibu', 'cekwibu', '.meme', 'meme', '.waifu', 'waifu', '.ceksange', 'ceksange', '.cekkaya', 'cekkaya', '.cekbucin', 'cekbucin', '.artinama', 'artinama', '.cekmasadepan', 'cekmasadepan', '.faktadunia', 'faktadunia', '.cekgempa', 'cekgempa', '.cekcuaca', 'cekcuaca'];
     const margaCommands = ['.margamenu', 'margamenu', '.cekpariban', 'cekpariban', '.cektartulang', 'cektartulang', '.cektarito', 'cektarito', '.cekpadan', 'cekpadan'];
     const videoCommands = ['.videomenu', 'videomenu', '.tiktokgirl', 'tiktokgirl', '.tiktoktobrut', 'tiktoktobrut', '.tiktokkayes', 'tiktokkayes', '.tiktokhot', 'tiktokhot', '.tiktokghea', 'tiktokghea', '.tiktokbocil', 'tiktokbocil', '.tiktoklesbi', 'tiktoklesbi', '.tiktokgay', 'tiktokgay', '.tiktokartis', 'tiktokartis', '.tiktokpacaran', 'tiktokpacaran', '.tiktokanjing', 'tiktokanjing', '.tiktokkucing', 'tiktokkucing', '.tiktokfreefire', 'tiktokfreefire', '.tiktokpubg', 'tiktokpubg', '.tiktoknikah', 'tiktoknikah', '.tiktokpointblank', 'tiktokpointblank'];
@@ -2366,6 +2382,8 @@ _Kirim atau balas/reply foto dengan perintah di atas. Jika tanpa foto, otomatis 
 │ .welcome on/off - untuk mengatur pesan masuk
 │ .goodbye on/off - untuk mengatur pesan keluar
 │ .antitagsw on/off - hapus story yang dikirim di grup
+│ .antijudol on/off - hapus pesan & media judi online
+│ .antidocument on/off - hapus dokumen apapun yang dikirim di grup
 │ .antivideo on/off - hapus video yang dikirim di grup
 │ .antifoto on/off - hapus foto yang dikirim di grup
 │ .antifoto1x on/off - hapus pesan sekali lihat yang dikirim di grup
@@ -2522,6 +2540,7 @@ _Kirim atau balas/reply foto dengan perintah di atas. Jika tanpa foto, otomatis 
 Perintah ini hanya bisa digunakan oleh Owner!` }, { quoted: msg });
       const ownerText = `👑 *Owner Menu*
 
+│ .upchannel - otomatis kirim media teks, video, foto, dokumen ke saluran
 │ .createsaluran - buat saluran/channel WhatsApp baru
 │ .autoblockprivate
 │ .delautoblockprivate
@@ -3787,6 +3806,132 @@ Pesan pribadi kembali diizinkan.` }, { quoted: msg });
       return await this.sock.sendMessage(jid, { 
         text: `📢 *Info Link Saluran (Channel) Aktif*\n\n• Nama Saluran: *${this.channelName || this.textNama || "JADIBOT BATAK VIP"}*\n• JID Saluran: \`${this.channelJid}\`\n\nUntuk menghapus, ketik *.delwalinkcha*` 
       }, { quoted: msg });
+    } else if (body.startsWith(".upchannel") || body.startsWith("upchannel")) {
+      if (!isOwner) return await this.sock.sendMessage(jid, { text: `👑 *Akses Ditolak*\nPerintah ini hanya bisa digunakan oleh Owner!` }, { quoted: msg });
+      
+      const rawText = messageContent.replace(/^\.?upchannel\s*/i, "").trim();
+      let targetChannelJid = this.channelJid;
+      let textToSend = rawText;
+
+      // Allow specifying channel explicitly if desired: .upchannel <jid/link> | <caption/teks>
+      if (rawText.includes("|") && (rawText.includes("@newsletter") || rawText.includes("whatsapp.com/channel/"))) {
+        const parts = rawText.split("|");
+        const chTarget = parts[0].trim();
+        textToSend = parts.slice(1).join("|").trim();
+        if (chTarget.includes("whatsapp.com/channel/")) {
+          const code = chTarget.split("whatsapp.com/channel/")[1].split("/")[0].split("?")[0].trim();
+          try {
+            const meta = await this.sock.newsletterMetadata("invite", code);
+            if (meta?.id) targetChannelJid = meta.id;
+          } catch(e) {}
+        } else if (chTarget.endsWith("@newsletter")) {
+          targetChannelJid = chTarget;
+        }
+      }
+
+      if (!targetChannelJid) {
+        return await this.sock.sendMessage(jid, {
+          text: `📢 *Saluran Belum Diatur!*\n\nSilakan atur saluran aktif terlebih dahulu dengan:\n• *.addwalinkcha <link atau JID channel>*\n• atau buat baru dengan *.createsaluran <Nama> | <Deskripsi>*\n\nAtau gunakan format:\n*.upchannel <link/JID channel> | <pesan>*`
+        }, { quoted: msg });
+      }
+
+      // Check quoted message or current message media
+      const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+      const isQuotedImage = quoted?.imageMessage;
+      const isQuotedVideo = quoted?.videoMessage;
+      const isQuotedDoc = quoted?.documentMessage || quoted?.documentWithCaptionMessage?.message?.documentMessage;
+      const isQuotedAudio = quoted?.audioMessage;
+      const isQuotedSticker = quoted?.stickerMessage;
+      const quotedText = quoted?.conversation || quoted?.extendedTextMessage?.text || "";
+
+      const currentImage = msg.message?.imageMessage;
+      const currentVideo = msg.message?.videoMessage;
+      const currentDoc = msg.message?.documentMessage || msg.message?.documentWithCaptionMessage?.message?.documentMessage;
+      const currentAudio = msg.message?.audioMessage;
+      const currentSticker = msg.message?.stickerMessage;
+
+      const mediaToDownload = isQuotedImage ? { message: { imageMessage: isQuotedImage } }
+        : isQuotedVideo ? { message: { videoMessage: isQuotedVideo } }
+        : isQuotedDoc ? { message: { documentMessage: isQuotedDoc } }
+        : isQuotedAudio ? { message: { audioMessage: isQuotedAudio } }
+        : isQuotedSticker ? { message: { stickerMessage: isQuotedSticker } }
+        : currentImage ? { message: { imageMessage: currentImage } }
+        : currentVideo ? { message: { videoMessage: currentVideo } }
+        : currentDoc ? { message: { documentMessage: currentDoc } }
+        : currentAudio ? { message: { audioMessage: currentAudio } }
+        : currentSticker ? { message: { stickerMessage: currentSticker } }
+        : null;
+
+      await this.sock.sendMessage(jid, { text: `⏳ *Sedang mengirim ke saluran WhatsApp...*` }, { quoted: msg });
+
+      try {
+        if (mediaToDownload) {
+          const buffer = await downloadMediaMessage(
+            mediaToDownload as any,
+            'buffer',
+            {},
+            { logger: pino({ level: 'silent' }) as any, reuploadRequest: this.sock.updateMediaMessage }
+          ) as Buffer;
+
+          const caption = textToSend || (isQuotedImage?.caption || isQuotedVideo?.caption || currentImage?.caption || currentVideo?.caption || "");
+
+          if (isQuotedImage || currentImage) {
+            await this.sock.sendMessage(targetChannelJid, {
+              image: buffer,
+              caption: caption
+            });
+            await this.sock.sendMessage(jid, { text: `✅ *Foto berhasil dikirim ke saluran!* 📢\n\n📌 *Saluran:* \`${targetChannelJid}\`${caption ? `\n📝 *Caption:* ${caption}` : ""}` }, { quoted: msg });
+          } else if (isQuotedVideo || currentVideo) {
+            await this.sock.sendMessage(targetChannelJid, {
+              video: buffer,
+              caption: caption
+            });
+            await this.sock.sendMessage(jid, { text: `✅ *Video berhasil dikirim ke saluran!* 📢\n\n📌 *Saluran:* \`${targetChannelJid}\`${caption ? `\n📝 *Caption:* ${caption}` : ""}` }, { quoted: msg });
+          } else if (isQuotedDoc || currentDoc) {
+            const docObj = isQuotedDoc || currentDoc;
+            await this.sock.sendMessage(targetChannelJid, {
+              document: buffer,
+              mimetype: docObj?.mimetype || 'application/octet-stream',
+              fileName: docObj?.fileName || 'dokumen',
+              caption: caption
+            });
+            await this.sock.sendMessage(jid, { text: `✅ *Dokumen (${docObj?.fileName || "file"}) berhasil dikirim ke saluran!* 📢\n\n📌 *Saluran:* \`${targetChannelJid}\`` }, { quoted: msg });
+          } else if (isQuotedAudio || currentAudio) {
+            const audioObj = isQuotedAudio || currentAudio;
+            await this.sock.sendMessage(targetChannelJid, {
+              audio: buffer,
+              mimetype: audioObj?.mimetype || 'audio/mp4',
+              ptt: !!audioObj?.ptt
+            });
+            await this.sock.sendMessage(jid, { text: `✅ *Audio/Voice Note berhasil dikirim ke saluran!* 📢\n\n📌 *Saluran:* \`${targetChannelJid}\`` }, { quoted: msg });
+          } else if (isQuotedSticker || currentSticker) {
+            await this.sock.sendMessage(targetChannelJid, {
+              sticker: buffer
+            });
+            await this.sock.sendMessage(jid, { text: `✅ *Stiker berhasil dikirim ke saluran!* 📢\n\n📌 *Saluran:* \`${targetChannelJid}\`` }, { quoted: msg });
+          }
+        } else {
+          // Sending text message
+          const textMessageToSend = textToSend || quotedText;
+          if (!textMessageToSend) {
+            return await this.sock.sendMessage(jid, {
+              text: `❌ *Format salah!*\n\nKetik pesan teks setelah perintah atau reply media (foto/video/dokumen/audio).\n\nContoh:\n• *.upchannel Halo semua, ada update fitur baru!*\n• Reply foto/video/dokumen dengan *.upchannel [caption opsional]*`
+            }, { quoted: msg });
+          }
+
+          await this.sock.sendMessage(targetChannelJid, { text: textMessageToSend });
+          await this.sock.sendMessage(jid, {
+            text: `✅ *Pesan teks berhasil dikirim ke saluran!* 📢\n\n📌 *Saluran:* \`${targetChannelJid}\`\n💬 *Pesan:*\n${textMessageToSend}`
+          }, { quoted: msg });
+        }
+
+        this.broadcastState(`Upchannel message/media sent to ${targetChannelJid}`);
+      } catch (err: any) {
+        console.error("Upchannel error:", err);
+        await this.sock.sendMessage(jid, {
+          text: `❌ *Gagal mengirim ke saluran:*\n${err?.message || err}\n\n_Pastikan bot adalah Admin/Pemilik di saluran tersebut._`
+        }, { quoted: msg });
+      }
     } else if (body.startsWith(".addowner") || body.startsWith("addowner")) {
       if (!isOwner) return await this.sock.sendMessage(jid, { text: `⚠️ Hanya owner yang dapat menggunakan fitur ini!` }, { quoted: msg });
       const args = messageContent.replace(/^\.?addowner\s*/i, "").trim();
@@ -6591,8 +6736,9 @@ Link referensi: ${randomItem.link}` }, { quoted: msg });
       } else {
         await this.sock.sendMessage(jid, { text: `Ketik on atau off! Contoh: .goodbye on` }, { quoted: msg });
       }
-    } else if (body.startsWith(".antitagsw") || body.startsWith("antitagsw") || body.startsWith(".antivideo") || body.startsWith("antivideo") || body.startsWith(".antifoto1x") || body.startsWith("antifoto1x") || body.startsWith(".antifoto") || body.startsWith("antifoto") || body.startsWith(".antistiker") || body.startsWith("antistiker") || body.startsWith(".antispam") || body.startsWith("antispam") || body.startsWith(".antivirtex") || body.startsWith("antivirtex") || body.startsWith(".antitoxic") || body.startsWith("antitoxic")) {
-      const featureName = body.split(" ")[0].replace(".", "");
+    } else if (body.startsWith(".antitagsw") || body.startsWith("antitagsw") || body.startsWith(".antivideo") || body.startsWith("antivideo") || body.startsWith(".antifoto1x") || body.startsWith("antifoto1x") || body.startsWith(".antifoto") || body.startsWith("antifoto") || body.startsWith(".antistiker") || body.startsWith("antistiker") || body.startsWith(".antispam") || body.startsWith("antispam") || body.startsWith(".antivirtex") || body.startsWith("antivirtex") || body.startsWith(".antitoxic") || body.startsWith("antitoxic") || body.startsWith(".antijudol") || body.startsWith("antijudol") || body.startsWith(".antidocument") || body.startsWith("antidocument") || body.startsWith(".antidokumen") || body.startsWith("antidokumen")) {
+      let featureName = body.split(" ")[0].replace(".", "");
+      if (featureName === "antidokumen") featureName = "antidocument";
       const settings = this.groupSettings.get(jid) || {};
       if (body.includes("on")) {
         (settings as any)[featureName] = true;

@@ -2101,7 +2101,7 @@ export default function Dashboard() {
                   <div className="bg-blue-500/20 p-2 rounded-lg text-blue-400 mt-1"><Users className="w-5 h-5" /></div>
                   <div>
                     <h3 className="font-semibold text-white text-sm">.groupmenu</h3>
-                    <p className="text-xs text-neutral-400 mt-1">Fitur admin grup seperti afk, infouser, tagadmin, infogrup, leaderboard, totalchat, menfess, confess, dll.</p>
+                    <p className="text-xs text-neutral-400 mt-1">Fitur admin grup seperti antijudol, antidocument, afk, infouser, tagadmin, infogrup, leaderboard, totalchat, menfess, confess, dll.</p>
                   </div>
                 </div>
                 <div className="bg-neutral-950 border border-neutral-800 p-4 rounded-xl flex items-start gap-4">
@@ -2115,7 +2115,7 @@ export default function Dashboard() {
                   <div className="bg-amber-500/20 p-2 rounded-lg text-amber-400 mt-1"><Settings className="w-5 h-5" /></div>
                   <div>
                     <h3 className="font-semibold text-white text-sm">.ownermenu</h3>
-                    <p className="text-xs text-neutral-400 mt-1">Menu khusus: .createsaluran, .self, .publik, .addwalinkcha, .delwalinkcha, .addowner, .delowner, .addnamabot, .delnamabot, .antibot, .autoread, .savekontak, broadcast & manajemen.</p>
+                    <p className="text-xs text-neutral-400 mt-1">Menu khusus: .upchannel (auto kirim media/teks ke saluran), .createsaluran, .self, .publik, .addwalinkcha, .delwalinkcha, .addowner, .delowner, .addnamabot, .delnamabot, .antibot, .autoread, .savekontak, broadcast & manajemen.</p>
                   </div>
                 </div>
                 <div className="bg-neutral-950 border border-neutral-800 p-4 rounded-xl flex items-start gap-4">
